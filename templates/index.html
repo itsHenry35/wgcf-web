@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>API POST Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f7f7f7;
+      }
+      
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-top: 40px;
+      }
+      
+      form {
+        max-width: 400px;
+        margin: 0 auto;
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      
+      label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 10px;
+      }
+      
+      select,
+      input[type="text"] {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        border-radius: 5px;
+        border: none;
+        background-color: #f2f2f2;
+        margin-bottom: 20px;
+        box-sizing: border-box;
+        font-size: 16px;
+      }
+      
+      button {
+        background-color: #333;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      
+      button:hover {
+        background-color: #222;
+      }
+      
+      #resultPlaceholder {
+        font-size: 18px;
+        margin-top: 20px;
+        padding: 20px;
+        border-radius: 5px;
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      
+      #resultPlaceholder.success {
+        color: green;
+      }
+      
+      #resultPlaceholder.error {
+        color: red;
+      }
+    </style>
+    <script src="https://www.google.com/recaptcha/api.js?render=6LeMdl0lAAAAAFaGrNltiGuJk2B5Rh6-PMWQawli"></script>
+
+  </head>
+  <body>
+    <h1>Get Warp Wireguard Config</h1>
+    <form>
+      <label for="method">Method:</label>
+      <select id="method" name="method">
+        <option value="free">Free</option>
+        <option value="teams">Teams</option>
+        <option value="plus">Plus</option>
+      </select>
+      <label id="extraLabel" for="extra"></label>
+      <label for="extra" id="extraLabel"></label>
+      <input type="text" id="extra" name="extra" />   
+      <button type="button" onclick="postData()">Submit</button>   
+    </form>
+
+    
+    <div id="resultPlaceholder"></div>
+
+    <script>
+
+    document.getElementById("extra").style.display = "none";
+    function postData() {
+  const method = document.getElementById("method").value;
+  const extraName = getExtraName(method);
+  const extraValue = document.getElementById("extra").value;
+  
+  // Disable the submit button and show a spinner
+  const submitButton = document.querySelector('button[type="button"]');
+  submitButton.disabled = true;
+  submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Submitting...';
+  
+  grecaptcha.ready(function() {
+    grecaptcha.execute('6LeMdl0lAAAAAFaGrNltiGuJk2B5Rh6-PMWQawli', {action: 'submit'})
+      .then(function(token) {
+        const data = {
+          method: method,
+          recaptcha_code: token,
+          extra: extraValue
+        };
+        const options = {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(data)
+        };
+
+        fetch("/api", options)
+          .then(response => {
+            if (!response.ok) {
+                throw new Error(response.statusText)
+            }
+            return response.json();
+          })
+          .then(data => {
+            const resultPlaceholder = document.getElementById("resultPlaceholder");
+            resultPlaceholder.classList.remove("success", "error");
+            if (data.success) {
+                resultPlaceholder.innerText = data.result;
+                resultPlaceholder.classList.add("success");
+            } else {
+                resultPlaceholder.innerText = data.error;
+                resultPlaceholder.classList.add("error");
+                }
+            
+            // Re-enable the submit button and remove the spinner
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Submit';
+          })
+          .catch(error => {
+            const resultPlaceholder = document.getElementById("resultPlaceholder");
+            resultPlaceholder.innerHTML = "An error occurred while submitting the data. <br/>" + error;
+            resultPlaceholder.classList.add("error");
+            
+            // Re-enable the submit button and remove the spinner
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Submit';
+          });
+      });
+  });
+}
+
+
+function getExtraName(method) {
+  switch (method) {
+    case "free":
+      return "";
+    case "plus":
+      return "License code";
+    case "teams":
+      return "Teams Token";
+    default:
+      return "";
+  }
+}
+
+document.getElementById("method").addEventListener("change", function() {
+  const method = this.value;
+  const extraName = getExtraName(method);
+  const extraLabel = document.querySelector("label[for=extra]");
+  extraLabel.innerText = extraName ? extraName + ":" : "";
+  document.getElementById("extra").style.display = extraName ? "block" : "none";
+});
+
+  
+  </script>
+</body>
+</html>
